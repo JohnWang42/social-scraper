@@ -1,0 +1,24 @@
+{
+  "name": "social-scraper",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "cookie-parser": "~1.4.5",
+    "debug": "~4.1.1",
+    "express": "~4.17.1",
+    "got": "^11.1.4",
+    "http-errors": "~1.7.3",
+    "less-middleware": "~3.1.0",
+    "morgan": "~1.10.0",
+    "mysql2": "^2.1.0",
+    "sequelize": "^5.21.10",
+    "twig": "~1.15.1",
+    "twitter-lite": "^0.13.0"
+  },
+  "devDependencies": {
+    "sequelize-cli": "^5.5.1"
+  }
+}
