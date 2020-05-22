@@ -6,7 +6,8 @@ const lessMiddleware = require('less-middleware');
 const logger = require('morgan');
 
 const indexRouter = require('./routes/index');
-// const usersRouter = require('./routes/users');
+const instaRouter = require('./routes/instagram');
+const twitRouter = require('./routes/twitter');
 
 const app = express();
 
@@ -23,7 +24,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/media', express.static('media'))
 
 app.use('/', indexRouter);
-// app.use('/users', usersRouter);
+app.use('/instagram', instaRouter);
+app.use('/twitter',twitRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
