@@ -22,6 +22,13 @@ module.exports = (sequelize, DataTypes) => {
         return rawValue ? rawValue : null;
       }
     },
+    insta_id: {
+      type: DataTypes.STRING,
+      get() {
+        const rawValue = this.getDataValue('insta_id');
+        return rawValue ? rawValue : null;
+      }
+    }
   }, {});
   InstagramEntry.associate = function(models) {
     // associations can be defined here

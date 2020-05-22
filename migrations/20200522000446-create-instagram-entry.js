@@ -14,6 +14,9 @@ module.exports = {
       img_src: {
         type: Sequelize.STRING
       },
+      insta_id: {
+        type: Sequelize.STRING
+      },
       account_name: {
         type: Sequelize.STRING
       },
