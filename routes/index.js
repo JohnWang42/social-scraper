@@ -141,6 +141,7 @@ router.post('/instagram', (req, res) => {
                             if (data == null) {
                                 res.status(400).send('Unable to find profile');
                             } else {
+                                // TODO get rid of regex for direct JSON feed. Example: https://www.instagram.com/steak_umm/?__a=1
                                 const regex = /<script type="text\/javascript">window\._sharedData = ([\s\S]*?);<\/script>/gm;
                                 const matches = regex.exec(data);
 
