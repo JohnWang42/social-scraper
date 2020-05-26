@@ -12,11 +12,11 @@ const db = require('../models/index');
 // grab html of instagram profile page
 async function getInstaFeed(profile_slug) {
     try {
-        const response = await got(`https://www.instagram.com/${profile_slug}/`);
-        return response.body;
+        const response = await got(`https://www.instagram.com/${profile_slug}/?__a=1`);
+        return JSON.parse(response.body);
     } catch(error) {
         console.log(error);
-        return null;
+        return false;
     }
 }
 
@@ -101,18 +101,19 @@ router.post('/', (req, res) => {
         getInstagramProfile(profile)
             .then((account) => {
                 if (Date.now() - account[0].last_updated >= config.updateInterval) {
+                    // Erase old cache of images
                     // grab new images after update interval has passed
                     getInstaFeed(profile)
                         .then((data) => {
                             if (data == null) {
                                 res.status(400).send('Unable to find profile');
                             } else {
-                                // TODO get rid of regex for direct JSON feed. Example: https://www.instagram.com/steak_umm/?__a=1
-                                const regex = /<script type="text\/javascript">window\._sharedData = ([\s\S]*?);<\/script>/gm;
-                                const matches = regex.exec(data);
+                                // regex to extract JSON from profile page
+                                // const regex = /<script type="text\/javascript">window\._sharedData = ([\s\S]*?);<\/script>/gm;
+                                // const matches = regex.exec(data);
 
-                                if (matches != null) {
-                                    const images = JSON.parse(matches[1]).entry_data.ProfilePage[0].graphql.user.edge_owner_to_timeline_media.edges;
+                                if (data) {
+                                    const images = data.graphql.user.edge_owner_to_timeline_media.edges;
                                     let posts = [];
                                     const codeSwap = /(\\u0026)/gm;
                                     // get first 4 links and their thumbnails
@@ -156,7 +157,7 @@ router.post('/', (req, res) => {
                             console.log(error);
                             res.status(500).send('Unable to retrieve profile');
                         });
-                } else{
+                } else {
                     // send cached images if update interval has not passed
                     getCachedImages(profile)
                         .then((posts) => {
