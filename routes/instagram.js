@@ -137,7 +137,7 @@ router.post('/', (req, res) => {
 
                                     // grab images, don't pull new one if it already exists
                                     getImagesFromInstagram(posts, profile)
-                                        .then( (data) => {
+                                        .then((data) => {
                                             res.setHeader('Content-Type', 'application/json');
                                             res.send(JSON.stringify(data));
                                         })
@@ -159,7 +159,7 @@ router.post('/', (req, res) => {
                 } else{
                     // send cached images if update interval has not passed
                     getCachedImages(profile)
-                        .then( (posts) => {
+                        .then((posts) => {
                             let data = [];
                             console.log(posts);
                             for (const post of posts) {
@@ -171,7 +171,7 @@ router.post('/', (req, res) => {
                                 })
                             }
                             res.setHeader('Content-Type', 'application/json');
-                            res.send(JSON.stringify(data));
+                            resres.send(JSON.stringify(data));
                         })
                         .catch( error => {
                             console.log(error);
