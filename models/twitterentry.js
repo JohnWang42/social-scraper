@@ -1,13 +1,6 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
   const TwitterEntry = sequelize.define('TwitterEntry', {
-    id_str: {
-      type: DataTypes.STRING,
-      get() {
-        const rawValue = this.getDataValue('profile_slug');
-        return rawValue ? rawValue : null;
-      }
-    },
     html: {
       type: DataTypes.TEXT,
       get() {

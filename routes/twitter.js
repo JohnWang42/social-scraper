@@ -47,8 +47,18 @@ async function cacheTweets(profile, tweets) {
                 last_updated: Date.now() - config.updateInterval // sets a timestamp for before update interval
             }
         });
+        let data = [];
+        for (const tweet of tweets) {
+            data.push({
+                html: tweet.html,
+                account_name: profile,
+            });
+        }
+        await db['TwitterEntry'].bulkCreate(data);
+        return data;
     } catch(error) {
         console.log(error);
+        return false;
     }
 }
 
@@ -81,9 +91,11 @@ router.post('/', (req, res) => {
                 // wait for all oembed codes to return, cache and send to user
                 Promise.all(tweetPromises)
                     .then( (embedCodes) => {
-                        cacheTweets(profile, embedCodes);
-                        res.setHeader('Content-Type', 'application/json');
-                        res.send(embedCodes);
+                        cacheTweets(profile, embedCodes)
+                            .then((data) => {
+                                res.setHeader('Content-Type', 'application/json');
+                                res.send(data);
+                            });
                     })
                     .catch((e) => {
                         console.log(e);
