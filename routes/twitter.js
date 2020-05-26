@@ -2,10 +2,6 @@ const express = require('express');
 const router = express.Router();
 
 const got = require('got');
-const stream = require('stream');
-const fs = require('fs');
-const {promisify} = require('util');
-const pipeline = promisify(stream.pipeline);
 const Twitter = require('twitter-lite');
 const config = require('../config');
 const db = require('../models/index');
@@ -31,26 +27,34 @@ async function getTweetEmbed(url) {
     }
 }
 
-router.post('/tweets', (req, res) => {
-    client.get('statuses/user_timeline', {
-        screen_name: 'steak_umm',
-        count: 2,
-        include_rts: false,
-        trim_user: true,
-    })
-        .then((results) => {
-            res.setHeader('Content-Type', 'application/json');
-            res.send(results);
-        })
-        .catch((e) => {
-            console.log(e);
-            res.status(500).send('Unable to retrieve tweet timeline.');
+// update timestamp on profile
+async function touchProfile(name) {
+    try {
+        await db['TwitterProfile'].update({ last_updated: Date.now() }, {
+            where: { name: slug }
         });
-});
+        return true;
+    } catch(error) {
+        console.log(error);
+    }
+}
+
+async function cacheTweets(profile, tweets) {
+    try {
+        await db['TwitterProfile'].findOrCreate({
+            where: { name: profile },
+            defaults: {
+                last_updated: Date.now() - config.updateInterval // sets a timestamp for before update interval
+            }
+        });
+    } catch(error) {
+        console.log(error);
+    }
+}
 
 router.post('/', (req, res) => {
     const profile = req.get('profile');
-    let numTweets = req.get('tweet-amount');
+    let numTweets = req.get('count');
     if (numTweets === undefined) {
         numTweets = 2;
     } else if (numTweets <= 0 || numTweets > 200) {
@@ -71,12 +75,13 @@ router.post('/', (req, res) => {
                 for (const result of results) {
                     // generate tweet URL based off profile ID and tweet ID
                     const url = encodeURIComponent(`http://twitter.com/${profile}/status/${result.id_str}`);
-                    tweetPromises.push(
-                        getTweetEmbed(url)
-                    );
+                    tweetPromises.push(getTweetEmbed(url));
                 }
+
+                // wait for all oembed codes to return, cache and send to user
                 Promise.all(tweetPromises)
                     .then( (embedCodes) => {
+                        cacheTweets(profile, embedCodes);
                         res.setHeader('Content-Type', 'application/json');
                         res.send(embedCodes);
                     })

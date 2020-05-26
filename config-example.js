@@ -1,5 +1,5 @@
 const config = {
-    updateInterval: 1500000, // 15 minutes
+    updateInterval: 15, // 15 minutes (will be converted to milliseconds in app)
 };
 
 config.twitter = {

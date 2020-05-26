@@ -95,13 +95,37 @@ async function getCachedImages(profile) {
 
 router.post('/', (req, res) => {
     const profile = req.get('profile');
+    let numPosts = req.get('count');
+    if (numPosts === undefined) {
+        numPosts = 2;
+    } else if (numPosts <= 0 || numPosts > 200) {
+        res.status(400).send('Must specify between 1 to 200 tweets');
+    }
     if (profile == null || profile === '') {
         res.status(400).send('No profile specified');
     } else {
         getInstagramProfile(profile)
             .then((account) => {
-                if (Date.now() - account[0].last_updated >= config.updateInterval) {
-                    // Erase old cache of images
+                // take update interval and convert to milliseconds for comparison
+                if (Date.now() - account[0].last_updated >= config.updateInterval * 60000) {
+                    // Delete cached images
+                    getCachedImages(profile)
+                        .then((entries) => {
+                            for (const entry of entries) {
+                                fs.unlink(`media/${entry.url_code}.jpg`, (err) => {
+                                    if (err) throw err;
+                                });
+                            }
+                           db['InstagramEntry'].destroy({
+                               where: {
+                                   account_name: profile
+                               }
+                           });
+                        })
+                        .catch(error => {
+                            console.log(error);
+                        });
+
                     // grab new images after update interval has passed
                     getInstaFeed(profile)
                         .then((data) => {
@@ -116,8 +140,8 @@ router.post('/', (req, res) => {
                                     const images = data.graphql.user.edge_owner_to_timeline_media.edges;
                                     let posts = [];
                                     const codeSwap = /(\\u0026)/gm;
-                                    // get first 4 links and their thumbnails
-                                    for (let n = 0; n < 4 && n < images.length; n++) {
+                                    // get links and their thumbnails
+                                    for (let n = 0; n < numPosts && n < images.length; n++) {
                                         const thumbs = images[n].node.thumbnail_resources;
                                         let url = '';
                                         // get first thumbnail above 400px
@@ -142,12 +166,16 @@ router.post('/', (req, res) => {
                                             res.setHeader('Content-Type', 'application/json');
                                             res.send(JSON.stringify(data));
                                         })
-                                        .catch(error => {
+                                        .catch((error) => {
                                             console.log(error);
                                             res.status(500).send('Unable to get images from Instagram');
                                         });
 
-                                    touchProfile(profile);
+                                    touchProfile(profile)
+                                        .catch((error) => {
+                                            console.log(error);
+                                            res.status(500).send('Unable to read profile from database');
+                                        });
                                 } else {
                                     res.status(400).send('Invalid/empty profile provided');
                                 }
@@ -172,7 +200,7 @@ router.post('/', (req, res) => {
                                 })
                             }
                             res.setHeader('Content-Type', 'application/json');
-                            resres.send(JSON.stringify(data));
+                            res.send(JSON.stringify(data));
                         })
                         .catch( error => {
                             console.log(error);
