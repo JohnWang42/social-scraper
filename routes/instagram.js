@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const env = process.env.NODE_ENV || 'development';
 
 const got = require('got');
 const stream = require('stream');
@@ -50,7 +51,7 @@ async function getImagesFromInstagram(posts, profile) {
                 );
                 const data = {
                     url_code: post.url_code,
-                    img_src: `media/${post.url_code}.jpg`,
+                    img_src: `${config[env].domain}/media/${post.url_code}.jpg`,
                     account_name: profile,
                     insta_id: post.insta_id
                 };

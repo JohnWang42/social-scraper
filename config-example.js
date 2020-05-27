@@ -16,6 +16,7 @@ config.development = {
     host: '127.0.0.1',
     port: 3306,
     dialect: 'mysql',
+    domain: 'localhost:3000',
 };
 config.test = {
     username: 'social_feed',
@@ -24,6 +25,7 @@ config.test = {
     host: '127.0.0.1',
     port: 3306,
     dialect: 'mysql',
+    domain: 'localhost:3000',
 };
 config.production = {
     username: 'social_feed',
@@ -32,6 +34,7 @@ config.production = {
     host: '127.0.0.1',
     port: 3306,
     dialect: 'mysql',
+    domain: 'localhost:3000',
 };
 
 module.exports = config;
