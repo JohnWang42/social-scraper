@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
         return rawValue ? rawValue : null;
       }
     },
-    last_updated:{
+    last_updated: {
       type: DataTypes.DATE,
       get() {
         const rawValue = this.getDataValue('last_updated');

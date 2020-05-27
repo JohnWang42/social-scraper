@@ -26,7 +26,7 @@ async function getInstagramProfile(slug) {
         return await db['InstagramProfile'].findOrCreate({
             where: { profile_slug: slug },
             defaults: {
-                last_updated: Date.now() - config.updateInterval // sets a timestamp for before update interval
+                last_updated: Date.now() - config.updateInterval * 60000 // sets a timestamp for before update interval
             }
         });
     } catch(error) {

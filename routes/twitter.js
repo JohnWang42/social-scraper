@@ -27,25 +27,41 @@ async function getTweetEmbed(url) {
     }
 }
 
+// find or create existing profile timestamp
+async function getTwitterProfile(profile) {
+    try {
+        return await db['TwitterProfile'].findOrCreate({
+            where: { name: profile },
+            defaults: {
+                last_updated: Date.now() - config.updateInterval * 60000 // sets a timestamp for before update interval
+            }
+        });
+    } catch(error) {
+        console.log(error);
+        return null;
+    }
+}
+
 // update timestamp on profile
-async function touchProfile(name) {
+async function touchProfile(profile) {
     try {
         await db['TwitterProfile'].update({ last_updated: Date.now() }, {
-            where: { name: slug }
+            where: { name: profile }
         });
         return true;
     } catch(error) {
         console.log(error);
+        return false;
     }
 }
 
 async function cacheTweets(profile, tweets) {
     try {
-        await db['TwitterProfile'].findOrCreate({
-            where: { name: profile },
-            defaults: {
-                last_updated: Date.now() - config.updateInterval // sets a timestamp for before update interval
-            }
+        // get rid of old cache
+        await db['TwitterEntry'].destroy({
+           where: {
+               account_name: profile
+           }
         });
         let data = [];
         for (const tweet of tweets) {
@@ -56,6 +72,19 @@ async function cacheTweets(profile, tweets) {
         }
         await db['TwitterEntry'].bulkCreate(data);
         return data;
+    } catch(error) {
+        console.log(error);
+        return false;
+    }
+}
+
+async function getTweetCache(profile) {
+    try {
+        return await db['TwitterEntry'].findAll({
+            where: {
+                account_name: profile
+            }
+        });
     } catch(error) {
         console.log(error);
         return false;
@@ -73,39 +102,60 @@ router.post('/', (req, res) => {
     if (profile == null || profile === '') {
         res.status(400).send('No profile specified');
     } else {
-        // retrieve list of recent tweets to display
-        client.get('statuses/user_timeline', {
-            screen_name: profile,
-            count: numTweets,
-            include_rts: false,
-            trim_user: true,
-        })
-            .then((results) => {
-                let tweetPromises = [];
-                for (const result of results) {
-                    // generate tweet URL based off profile ID and tweet ID
-                    const url = encodeURIComponent(`http://twitter.com/${profile}/status/${result.id_str}`);
-                    tweetPromises.push(getTweetEmbed(url));
-                }
-
-                // wait for all oembed codes to return, cache and send to user
-                Promise.all(tweetPromises)
-                    .then( (embedCodes) => {
-                        cacheTweets(profile, embedCodes)
-                            .then((data) => {
-                                res.setHeader('Content-Type', 'application/json');
-                                res.send(data);
-                            });
+        // check age of cache and grab new tweets if needed
+        getTwitterProfile(profile)
+            .then((account) => {
+                if (Date.now() - account[0].last_updated >= config.updateInterval * 60000) {
+                    // retrieve list of recent tweets to display
+                    client.get('statuses/user_timeline', {
+                        screen_name: profile,
+                        count: numTweets,
+                        include_rts: false,
+                        trim_user: true,
                     })
-                    .catch((e) => {
-                        console.log(e);
-                        res.status(500).send('Unable to retrieve tweets.');
-                    });
+                        .then((results) => {
+                            let tweetPromises = [];
+                            for (const result of results) {
+                                // generate tweet URL based off profile ID and tweet ID
+                                const url = encodeURIComponent(`http://twitter.com/${profile}/status/${result.id_str}`);
+                                tweetPromises.push(getTweetEmbed(url));
+                            }
+
+                            // wait for all oembed codes to return, cache and send to user
+                            Promise.all(tweetPromises)
+                                .then( (embedCodes) => {
+                                    cacheTweets(profile, embedCodes)
+                                        .then((data) => {
+                                            res.setHeader('Content-Type', 'application/json');
+                                            res.send(data);
+                                            touchProfile(profile);
+                                        });
+                                })
+                                .catch((e) => {
+                                    console.log(e);
+                                    res.status(500).send('Unable to retrieve tweets.');
+                                });
+                        })
+                        .catch((e) => {
+                            console.log(e);
+                            res.status(500).send('Unable to retrieve tweet timeline.');
+                        });
+                } else {
+                    getTweetCache(profile)
+                        .then((data) => {
+                            res.setHeader('Content-Type', 'application/json');
+                            res.send(JSON.stringify(data));
+                        })
+                        .catch((error) => {
+                            console.log(error);
+                            res.status(500).send('Unable to retrieve cached tweets.');
+                        });
+                }
             })
-            .catch((e) => {
-                console.log(e);
-                res.status(500).send('Unable to retrieve tweet timeline.');
-            });
+            .catch((error) => {
+              console.log(error);
+              res.status(500).send('Unable to retrieve account.')
+            })
     }
 });
 
