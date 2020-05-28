@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const env = process.env.NODE_ENV || 'development';
+const cors = require('cors');
 
 const got = require('got');
 const stream = require('stream');
@@ -94,7 +95,7 @@ async function getCachedImages(profile) {
     }
 }
 
-router.post('/', (req, res) => {
+router.post('/', cors(), (req, res) => {
     const profile = req.get('profile');
     let numPosts = req.get('count');
     if (numPosts === undefined) {

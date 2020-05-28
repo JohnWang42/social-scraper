@@ -23,6 +23,22 @@ app.use(lessMiddleware(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/media', express.static('media'))
 
+// enable cors
+const config = require('./config');
+const cors = require('cors');
+const whitelist = config.corslist;
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  methods: 'POST'
+}
+app.options('*', cors());
+
 app.use('/', indexRouter);
 app.use('/instagram', instaRouter);
 app.use('/twitter',twitRouter);

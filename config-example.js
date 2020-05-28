@@ -1,5 +1,6 @@
 const config = {
     updateInterval: 15, // 15 minutes (will be converted to milliseconds in app)
+    corslist: [],
 };
 
 config.twitter = {

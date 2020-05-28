@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const cors = require('cors');
 
 const got = require('got');
 const Twitter = require('twitter-lite');
@@ -91,7 +92,7 @@ async function getTweetCache(profile) {
     }
 }
 
-router.post('/', (req, res) => {
+router.post('/', cors(), (req, res) => {
     const profile = req.get('profile');
     let numTweets = req.get('count');
     if (numTweets === undefined) {
