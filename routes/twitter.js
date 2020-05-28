@@ -20,7 +20,19 @@ const client = new Twitter({
 // retrieve oembed code from Twitter
 async function getTweetEmbed(url) {
     try {
-        const result = await got(`https://publish.twitter.com/oembed?url=${url}`);
+        const params = {
+            chrome: 'nofooter',
+            omit_script: true,
+            hide_media: true,
+            link_color: 'e31d1a',
+            hide_thread: true
+        }
+        let urlparams = '';
+        Object.keys(params).forEach((key) => {
+            urlparams += `${key}=${params[key]}&`;
+        });
+        console.log(urlparams);
+        const result = await got(`https://publish.twitter.com/oembed?url=${url}?${urlparams}`);
         return JSON.parse(result.body);
     } catch(e) {
         console.log(e);
@@ -108,15 +120,18 @@ router.post('/', cors(), (req, res) => {
             .then((account) => {
                 if (Date.now() - account[0].last_updated >= config.updateInterval * 60000) {
                     // retrieve list of recent tweets to display
+                    // since 'count' limits the amount before filtering retweets and replies, we have to grab the max of 200
                     client.get('statuses/user_timeline', {
                         screen_name: profile,
-                        count: numTweets,
+                        count: 200,
                         include_rts: false,
+                        exclude_replies: true,
                         trim_user: true,
                     })
                         .then((results) => {
                             let tweetPromises = [];
-                            for (const result of results) {
+                            for (let twt = 0; twt < numTweets && twt < results.length; twt++) {
+                                const result = results[twt];
                                 // generate tweet URL based off profile ID and tweet ID
                                 const url = encodeURIComponent(`http://twitter.com/${profile}/status/${result.id_str}`);
                                 tweetPromises.push(getTweetEmbed(url));
