@@ -8,6 +8,20 @@ module.exports = (sequelize, DataTypes) => {
         return rawValue ? rawValue : null;
       }
     },
+    full_name: {
+      type: DataTypes.STRING,
+      get() {
+        const rawValue = this.getDataValue('full_name');
+        return rawValue ? rawValue : null;
+      }
+    },
+    profile_pic: {
+      type: DataTypes.STRING,
+      get() {
+        const rawValue = this.getDataValue('profile_pic');
+        return rawValue ? rawValue : null;
+      }
+    },
     last_updated: {
       type: DataTypes.DATE,
       get() {

@@ -11,6 +11,12 @@ module.exports = {
       name: {
         type: Sequelize.STRING
       },
+      full_name: {
+        type: Sequelize.STRING
+      },
+      profile_pic: {
+        type: Sequelize.STRING
+      },
       last_updated: {
         type: Sequelize.DATE
       },

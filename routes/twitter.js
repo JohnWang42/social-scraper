@@ -55,20 +55,7 @@ async function getTwitterProfile(profile) {
     }
 }
 
-// update timestamp on profile
-async function touchProfile(profile) {
-    try {
-        await db['TwitterProfile'].update({ last_updated: Date.now() }, {
-            where: { name: profile }
-        });
-        return true;
-    } catch(error) {
-        console.log(error);
-        return false;
-    }
-}
-
-async function cacheTweets(profile, tweets) {
+async function cacheTweets(profile, tweets, user) {
     try {
         // get rid of old cache
         await db['TwitterEntry'].destroy({
@@ -76,15 +63,40 @@ async function cacheTweets(profile, tweets) {
                account_name: profile
            }
         });
-        let data = [];
+
+        // assemble tweet data and cache it
+        let data = []; // data for caching
+        let tweetData = []; // data to return
         for (const tweet of tweets) {
             data.push({
-                html: tweet.html,
                 account_name: profile,
+                html: tweet.html
             });
+            tweetData.push({ html: tweet.html });
         }
         await db['TwitterEntry'].bulkCreate(data);
-        return data;
+
+        // update profile image and grab account info
+        await db['TwitterProfile'].update({
+            last_updated: Date.now(),
+            profile_pic: user.profile_image_url_https,
+            full_name: user.name
+        }, {
+            where: { name: profile }
+        });
+        const twitterAccount = await db['TwitterProfile'].findAll(
+            {
+                attributes: ['name', 'profile_pic', 'full_name'],
+                where: {
+                    name: profile
+                }
+            });
+
+        // return tweets and account info
+        return {
+            tweets: tweetData,
+            account: twitterAccount[0]
+        };
     } catch(error) {
         console.log(error);
         return false;
@@ -93,11 +105,26 @@ async function cacheTweets(profile, tweets) {
 
 async function getTweetCache(profile) {
     try {
-        return await db['TwitterEntry'].findAll({
+        const tweetData = await db['TwitterEntry'].findAll({
+            attributes: ['html'],
             where: {
                 account_name: profile
             }
         });
+
+        const twitterAccount = await db['TwitterProfile'].findAll(
+            {
+                attributes: ['name', 'profile_pic', 'full_name'],
+                where: {
+                    name: profile
+                }
+            });
+
+        // return tweets and account info
+        return {
+            tweets: tweetData,
+            account: twitterAccount[0]
+        };
     } catch(error) {
         console.log(error);
         return false;
@@ -126,7 +153,7 @@ router.post('/', cors(), (req, res) => {
                         count: 200,
                         include_rts: false,
                         exclude_replies: true,
-                        trim_user: true,
+                        trim_user: false,
                     })
                         .then((results) => {
                             let tweetPromises = [];
@@ -139,12 +166,11 @@ router.post('/', cors(), (req, res) => {
 
                             // wait for all oembed codes to return, cache and send to user
                             Promise.all(tweetPromises)
-                                .then( (embedCodes) => {
-                                    cacheTweets(profile, embedCodes)
+                                .then((embedCodes) => {
+                                    cacheTweets(profile, embedCodes, results[0].user)
                                         .then((data) => {
                                             res.setHeader('Content-Type', 'application/json');
                                             res.send(data);
-                                            touchProfile(profile);
                                         });
                                 })
                                 .catch((e) => {
