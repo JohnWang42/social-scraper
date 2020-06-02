@@ -15,6 +15,7 @@ const db = require('../models/index');
 async function getInstaFeed(profile_slug) {
     try {
         const response = await got(`https://www.instagram.com/${profile_slug}/?__a=1`);
+        console.log(response.body);
         return JSON.parse(response.body);
     } catch(error) {
         console.log(error);
