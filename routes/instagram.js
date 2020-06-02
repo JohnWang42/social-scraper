@@ -179,7 +179,7 @@ router.post('/', cors(), (req, res) => {
                                             res.status(500).send('Unable to read profile from database');
                                         });
                                 } else {
-                                    res.status(400).send('Invalid/empty profile provided');
+                                    res.status(400).send('Invalid/empty profile provided: ' + profile);
                                 }
                             }
                         })
